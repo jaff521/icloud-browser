@@ -1,6 +1,7 @@
 {
   "appId": "com.example.icloud-browser",
   "productName": "iCloud Browser",
+  "asar": false,
   "directories": {
     "output": "release"
   },
@@ -8,7 +9,14 @@
     "dist",
     "dist-electron",
     "node_modules",
-    "package.json"
+    "package.json",
+    "native-thumbnail/build/Release/macos_thumbnail.node"
+  ],
+  "asarUnpack": [
+    "**/*.{node,dll,dylib,so}",
+    "node_modules/sharp/**/*",
+    "node_modules/@img/**/*",
+    "native-thumbnail/build/Release/macos_thumbnail.node"
   ],
   "mac": {
     "category": "public.app-category.photography",

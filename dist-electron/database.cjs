@@ -22,6 +22,13 @@ function loadMetadata() {
     if (fs.existsSync(metadataPath)) {
       const data = fs.readFileSync(metadataPath, 'utf-8');
       metadata = JSON.parse(data);
+      // Migration for existing data
+      metadata.photos.forEach(photo => {
+        if (!photo.thumbnail_status) {
+          photo.thumbnail_status = 'pending';
+          photo.thumbnail_path = null;
+        }
+      });
       console.log('[Database] 已加载现有元数据，照片数:', metadata.photos.length);
     }
   } catch (error) {
@@ -94,7 +101,9 @@ function scanDirectory(rootPath) {
               month: month,
               day: day,
               dateCreated: `${year}-${month}-${day}`,
-              isVideo: ext.toLowerCase() === '.mov' || ext.toLowerCase() === '.mp4' || ext.toLowerCase() === '.webm' ? 1 : 0
+              isVideo: ext.toLowerCase() === '.mov' || ext.toLowerCase() === '.mp4' || ext.toLowerCase() === '.webm' ? 1 : 0,
+              thumbnail_status: 'pending',
+              thumbnail_path: null
             };
             metadata.photos.push(photo);
 
@@ -171,6 +180,22 @@ function getPhotoCount(year, month, day) {
   return filtered.length;
 }
 
+function getPendingThumbnails(limit = 100) {
+  return metadata.photos
+    .filter(p => p.thumbnail_status === 'pending')
+    .slice(0, limit);
+}
+
+function updatePhotoThumbnail(id, status, path = null) {
+  const photo = metadata.photos.find(p => p.id === id);
+  if (photo) {
+    photo.thumbnail_status = status;
+    if (path) {
+      photo.thumbnail_path = path;
+    }
+  }
+}
+
 module.exports = {
   loadMetadata,
   saveMetadata,
@@ -179,5 +204,7 @@ module.exports = {
   getYears,
   getMonths,
   getDays,
-  getPhotoCount
+  getPhotoCount,
+  getPendingThumbnails,
+  updatePhotoThumbnail
 };

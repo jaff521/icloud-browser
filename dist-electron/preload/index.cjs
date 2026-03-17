@@ -30,5 +30,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   scanDirectory: (rootPath) => {
     console.log('[Preload] 调用 scanDirectory, path:', rootPath);
     return ipcRenderer.invoke('scan-directory', rootPath);
+  },
+  onThumbnailReady: (callback) => {
+    const handler = (event, data) => callback(data);
+    ipcRenderer.on('thumbnail-ready', handler);
+    return () => ipcRenderer.removeListener('thumbnail-ready', handler);
   }
 });

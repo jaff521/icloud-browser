@@ -30,8 +30,16 @@ try {
 }
 const database = require('../database.cjs');
 const imageProcessor = require('./imageProcessor.cjs');
-
+let macosThumbnail;
+try {
+  macosThumbnail = require('../../native-thumbnail/build/Release/macos_thumbnail.node');
+} catch (e) {
+  console.error("Failed to load macos_thumbnail addon:", e);
+}
 console.log('[Main] 主进程启动');
+
+// Enable HEVC (H.265) playback support for iOS videos
+app.commandLine.appendSwitch('enable-features', 'PlatformHEVCDecoderSupport');
 
 // 注册本地协议，用于加载本地文件
 const localProtocol = 'local-file';
@@ -44,7 +52,8 @@ protocol.registerSchemesAsPrivileged([
       standard: true,
       bypassCSP: true,
       supportFetchAPI: true,
-      corsEnabled: true
+      corsEnabled: true,
+      stream: true
     }
   }
 ]);
@@ -60,7 +69,7 @@ function getMimeType(filePath) {
   if (ext.endsWith('.svg')) return 'image/svg+xml';
   if (ext.endsWith('.webp')) return 'image/webp';
   if (ext.endsWith('.heic')) return 'image/heic';
-  if (ext.endsWith('.mov')) return 'video/quicktime';
+  if (ext.endsWith('.mov')) return 'video/mp4'; // Chromium prefers video/mp4 for smooth playback over video/quicktime
   if (ext.endsWith('.mp4')) return 'video/mp4';
   if (ext.endsWith('.webm')) return 'video/webm';
   return 'application/octet-stream';
@@ -68,15 +77,20 @@ function getMimeType(filePath) {
 
 // 将本地协议 URL 转换回文件路径
 function fromLocalUrl(url) {
-  if (url.startsWith(`${localProtocol}://`)) {
-    let filePath = url.slice(`${localProtocol}://`.length);
-    // URL 解码
-    filePath = decodeURIComponent(filePath);
-    // 确保路径以 / 开头 (fix for macOS paths when using encodeURIComponent)
-    if (!filePath.startsWith('/')) {
-      filePath = '/' + filePath;
+  try {
+    const urlObj = new URL(url);
+    if (urlObj.protocol !== `${localProtocol}:`) return decodeURIComponent(url);
+    // Decode the pathname which should be like '/Users/suf1234/...'
+    return decodeURIComponent(urlObj.pathname);
+  } catch (e) {
+    if (url.startsWith(`${localProtocol}://`)) {
+      let filePath = url.slice(`${localProtocol}://local/`.length);
+      filePath = decodeURIComponent(filePath);
+      if (!filePath.startsWith('/')) {
+        filePath = '/' + filePath;
+      }
+      return filePath;
     }
-    return filePath;
   }
   return decodeURIComponent(url);
 }
@@ -123,69 +137,65 @@ function createWindow() {
 // 注册本地文件协议处理
 function registerLocalProtocol() {
   protocol.handle(localProtocol, async (request) => {
-    const urlObj = new URL(request.url);
-    // Remove leading slash on Windows if it's like /C:/...
-    let filePath = fromLocalUrl(request.url.split('?')[0]);
-    const type = urlObj.searchParams.get('type'); // 'thumbnail' | 'preview' | 'video-thumb'
-
-    logToFile('[Protocol] Request:', filePath, 'Type:', type, 'Raw URL:', request.url);
-
     try {
-      let finalPath = filePath;
-      let mimeType = getMimeType(filePath);
+      const urlObj = new URL(request.url);
+      const isThumbnail = urlObj.searchParams.get('type') === 'thumbnail';
+      const sizeParam = urlObj.searchParams.get('size');
+      const size = sizeParam ? parseInt(sizeParam, 10) : 200;
       
-      const isHeic = filePath.toLowerCase().endsWith('.heic');
-      const isVideo = mimeType.startsWith('video/');
+      let filePath = fromLocalUrl(request.url.split('?')[0]);
       
-      if (isVideo && type === 'video-thumb') {
-         try {
-           finalPath = await imageProcessor.processVideoThumbnail(filePath, type);
-           mimeType = 'image/jpeg';
-           logToFile('[Protocol] Processed video thumbnail path:', finalPath, 'MIME:', mimeType);
-         } catch (err) {
-           logToFile('[Protocol] Video thumbnail processing failed:', err);
-         }
-      } else if (!isVideo && (isHeic || type === 'thumbnail')) {
-         const processType = type || (isHeic ? 'preview' : null);
-         if (processType) {
-            try {
-              finalPath = await imageProcessor.processImage(filePath, processType);
-              mimeType = 'image/jpeg';
-              logToFile('[Protocol] Processed image path:', finalPath, 'MIME:', mimeType);
-            } catch (err) {
-              logToFile('[Protocol] Image processing failed:', err);
-              if (isHeic) {
-                const svgContent = `
-                  <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
-                    <rect width="100%" height="100%" fill="#f0f0f0"/>
-                    <text x="50%" y="50%" font-family="system-ui, sans-serif" font-size="14" fill="#666" text-anchor="middle" dy=".3em">Preview Unavailable</text>
-                    <text x="50%" y="65%" font-family="system-ui, sans-serif" font-size="10" fill="#999" text-anchor="middle" dy=".3em">(HEIC Conversion Failed)</text>
-                  </svg>
-                `;
-                return new Response(svgContent, {
-                  status: 200,
-                  headers: { 'Content-Type': 'image/svg+xml' }
-                });
-              }
-            }
-         }
+      logToFile(`[Protocol] Fetching: ${request.url} | isThumbnail: ${isThumbnail} | size: ${size} | filePath: ${filePath} | macosThumbnail: ${!!macosThumbnail}`);
+
+      if (!fs.existsSync(filePath)) {
+        logToFile(`[Protocol] File not found on disk: ${filePath}`);
+        return new Response('Not Found', { status: 404 });
       }
 
-      if (fs.existsSync(finalPath)) {
-        const fileUrl = require('url').pathToFileURL(finalPath).href;
-        return net.fetch(fileUrl);
-      } else {
-        logToFile(`[Protocol] File not found on disk: ${finalPath}`);
+      // If thumbnail requested and we have the native addon loaded
+      if (isThumbnail && macosThumbnail) {
+        try {
+          const buffer = macosThumbnail.getThumbnail(filePath, size);
+          return new Response(buffer, {
+            headers: { 'Content-Type': 'image/jpeg' }
+          });
+        } catch (e) {
+          logToFile(`[Protocol] Native thumbnail generation failed for ${filePath}: ${e.message}`);
+          // Fall back to original file if thumbnail fails
+        }
       }
+
+      // Serve original file directly using net.fetch to preserve Range requests
+      const fileUrl = require('url').pathToFileURL(filePath).href;
+      const headers = new Headers(request.headers);
+      
+      // Override the content-type for .mov if needed
+      const overrideMime = getMimeType(filePath);
+      
+      const fetchRequest = new Request(fileUrl, {
+        method: request.method,
+        headers: headers
+      });
+      
+      const response = await net.fetch(fetchRequest);
+      
+      // We need to recreate the response to inject our target mime type
+      const responseHeaders = new Headers(response.headers);
+      if (overrideMime) {
+        responseHeaders.set('content-type', overrideMime);
+      }
+      
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: responseHeaders
+      });
+      
     } catch (error) {
       logToFile('[Protocol] Critical Error:', error.message);
       logToFile('[Protocol] Stack:', error.stack);
+      return new Response('Internal error', { status: 500 });
     }
-
-    return new Response('Not Found', {
-      status: 404,
-      headers: { 'Content-Type': 'text/plain' }
-    });
   });
   console.log('[Main] 本地协议已注册');
 }
