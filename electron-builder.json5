@@ -1,0 +1,24 @@
+{
+  "appId": "com.example.icloud-browser",
+  "productName": "iCloud Browser",
+  "directories": {
+    "output": "release"
+  },
+  "files": [
+    "dist",
+    "dist-electron",
+    "node_modules",
+    "package.json"
+  ],
+  "mac": {
+    "category": "public.app-category.photography",
+    "target": "dmg",
+    "icon": "build/icon.icns"
+  },
+  "win": {
+    "target": "nsis"
+  },
+  "linux": {
+    "target": "AppImage"
+  }
+}
