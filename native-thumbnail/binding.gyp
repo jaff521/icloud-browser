@@ -16,7 +16,9 @@
             "-framework Foundation", 
             "-framework ImageIO", 
             "-framework CoreGraphics", 
-            "-framework CoreServices"
+            "-framework CoreServices",
+            "-framework AVFoundation",
+            "-framework CoreMedia"
         ]
       }
     }

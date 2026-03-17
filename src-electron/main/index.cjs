@@ -38,6 +38,9 @@ try {
 }
 console.log('[Main] 主进程启动');
 
+// Enable HEVC (H.265) playback support for iOS videos
+app.commandLine.appendSwitch('enable-features', 'PlatformHEVCDecoderSupport');
+
 // 注册本地协议，用于加载本地文件
 const localProtocol = 'local-file';
 
@@ -49,7 +52,8 @@ protocol.registerSchemesAsPrivileged([
       standard: true,
       bypassCSP: true,
       supportFetchAPI: true,
-      corsEnabled: true
+      corsEnabled: true,
+      stream: true
     }
   }
 ]);
@@ -65,7 +69,7 @@ function getMimeType(filePath) {
   if (ext.endsWith('.svg')) return 'image/svg+xml';
   if (ext.endsWith('.webp')) return 'image/webp';
   if (ext.endsWith('.heic')) return 'image/heic';
-  if (ext.endsWith('.mov')) return 'video/quicktime';
+  if (ext.endsWith('.mov')) return 'video/mp4'; // Chromium prefers video/mp4 for smooth playback over video/quicktime
   if (ext.endsWith('.mp4')) return 'video/mp4';
   if (ext.endsWith('.webm')) return 'video/webm';
   return 'application/octet-stream';
@@ -161,9 +165,31 @@ function registerLocalProtocol() {
         }
       }
 
-      // Serve original file directly
+      // Serve original file directly using net.fetch to preserve Range requests
       const fileUrl = require('url').pathToFileURL(filePath).href;
-      return net.fetch(fileUrl);
+      const headers = new Headers(request.headers);
+      
+      // Override the content-type for .mov if needed
+      const overrideMime = getMimeType(filePath);
+      
+      const fetchRequest = new Request(fileUrl, {
+        method: request.method,
+        headers: headers
+      });
+      
+      const response = await net.fetch(fetchRequest);
+      
+      // We need to recreate the response to inject our target mime type
+      const responseHeaders = new Headers(response.headers);
+      if (overrideMime) {
+        responseHeaders.set('content-type', overrideMime);
+      }
+      
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: responseHeaders
+      });
       
     } catch (error) {
       logToFile('[Protocol] Critical Error:', error.message);

@@ -3,6 +3,7 @@
 #import <ImageIO/ImageIO.h>
 #import <CoreGraphics/CoreGraphics.h>
 #import <CoreServices/CoreServices.h>
+#import <AVFoundation/AVFoundation.h>
 
 using namespace Napi;
 
@@ -23,31 +24,58 @@ Value GetThumbnail(const CallbackInfo& info) {
     @autoreleasepool {
         NSString *path = [NSString stringWithUTF8String:filePath.c_str()];
         NSURL *url = [NSURL fileURLWithPath:path];
-
-        NSDictionary *options = @{
-            (id)kCGImageSourceShouldCache: @NO,
-            (id)kCGImageSourceShouldAllowFloat: @YES
-        };
-        CGImageSourceRef source = CGImageSourceCreateWithURL((__bridge CFURLRef)url, (__bridge CFDictionaryRef)options);
-
-        if (!source) {
-            Error::New(env, "Failed to create image source").ThrowAsJavaScriptException();
-            return env.Null();
-        }
-
-        // Generate the thumbnail. The OS will use embedded thumbs if available!
-        NSDictionary *thumbOptions = @{
-            (id)kCGImageSourceCreateThumbnailFromImageIfAbsent: @YES,
-            (id)kCGImageSourceCreateThumbnailWithTransform: @YES,
-            (id)kCGImageSourceThumbnailMaxPixelSize: @(size)
-        };
-
-        CGImageRef thumb = CGImageSourceCreateThumbnailAtIndex(source, 0, (__bridge CFDictionaryRef)thumbOptions);
-        CFRelease(source);
+        NSString *extension = [[url pathExtension] lowercaseString];
         
-        if (!thumb) {
-            Error::New(env, "Failed to create thumbnail").ThrowAsJavaScriptException();
-            return env.Null();
+        CGImageRef thumb = NULL;
+
+        if ([extension isEqualToString:@"mov"] || [extension isEqualToString:@"mp4"] || [extension isEqualToString:@"m4v"]) {
+            AVURLAsset *asset = [AVURLAsset URLAssetWithURL:url options:nil];
+            AVAssetImageGenerator *generator = [AVAssetImageGenerator assetImageGeneratorWithAsset:asset];
+            generator.appliesPreferredTrackTransform = YES;
+            generator.maximumSize = CGSizeMake(size, size);
+            
+            NSError *error = nil;
+            CMTime time = CMTimeMake(0, 1);
+            if ([asset duration].value > 0) {
+                // if possible, try to grab a frame 1 second in, else use 0
+                CMTime oneSecond = CMTimeMake(1, 1);
+                if (CMTimeCompare([asset duration], oneSecond) > 0) {
+                    time = oneSecond;
+                }
+            }
+            
+            thumb = [generator copyCGImageAtTime:time actualTime:NULL error:&error];
+            
+            if (!thumb) {
+                Error::New(env, [[NSString stringWithFormat:@"Failed to create video thumbnail: %@", [error localizedDescription]] UTF8String]).ThrowAsJavaScriptException();
+                return env.Null();
+            }
+        } else {
+            NSDictionary *options = @{
+                (id)kCGImageSourceShouldCache: @NO,
+                (id)kCGImageSourceShouldAllowFloat: @YES
+            };
+            CGImageSourceRef source = CGImageSourceCreateWithURL((__bridge CFURLRef)url, (__bridge CFDictionaryRef)options);
+
+            if (!source) {
+                Error::New(env, "Failed to create image source").ThrowAsJavaScriptException();
+                return env.Null();
+            }
+
+            // Generate the thumbnail. The OS will use embedded thumbs if available!
+            NSDictionary *thumbOptions = @{
+                (id)kCGImageSourceCreateThumbnailFromImageIfAbsent: @YES,
+                (id)kCGImageSourceCreateThumbnailWithTransform: @YES,
+                (id)kCGImageSourceThumbnailMaxPixelSize: @(size)
+            };
+
+            thumb = CGImageSourceCreateThumbnailAtIndex(source, 0, (__bridge CFDictionaryRef)thumbOptions);
+            CFRelease(source);
+            
+            if (!thumb) {
+                Error::New(env, "Failed to create thumbnail").ThrowAsJavaScriptException();
+                return env.Null();
+            }
         }
 
         NSMutableData *imageData = [NSMutableData data];

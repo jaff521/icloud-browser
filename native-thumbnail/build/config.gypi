@@ -495,7 +495,7 @@
     "init_module": "/Users/suf1234/.npm-init.js",
     "userconfig": "/Users/suf1234/.npmrc",
     "globalconfig": "/Users/suf1234/.nvm/versions/node/v23.8.0/etc/npmrc",
-    "local_prefix": "/Users/suf1234/code-spaces/electron/electron-test/native-thumbnail",
+    "local_prefix": "/Users/suf1234/code-spaces/electron/icloud-browser/native-thumbnail",
     "registry": "https://registry.npmmirror.com",
     "global_prefix": "/Users/suf1234/.nvm/versions/node/v23.8.0"
   }

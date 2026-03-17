@@ -58,7 +58,7 @@ INCS_Debug := \
 	-I/Users/suf1234/Library/Caches/node-gyp/23.8.0/deps/uv/include \
 	-I/Users/suf1234/Library/Caches/node-gyp/23.8.0/deps/zlib \
 	-I/Users/suf1234/Library/Caches/node-gyp/23.8.0/deps/v8/include \
-	-I/Users/suf1234/code-spaces/electron/electron-test/native-thumbnail/node_modules/node-addon-api
+	-I/Users/suf1234/code-spaces/electron/icloud-browser/native-thumbnail/node_modules/node-addon-api
 
 DEFS_Release := \
 	'-DNODE_GYP_MODULE_NAME=macos_thumbnail' \
@@ -114,7 +114,7 @@ INCS_Release := \
 	-I/Users/suf1234/Library/Caches/node-gyp/23.8.0/deps/uv/include \
 	-I/Users/suf1234/Library/Caches/node-gyp/23.8.0/deps/zlib \
 	-I/Users/suf1234/Library/Caches/node-gyp/23.8.0/deps/v8/include \
-	-I/Users/suf1234/code-spaces/electron/electron-test/native-thumbnail/node_modules/node-addon-api
+	-I/Users/suf1234/code-spaces/electron/icloud-browser/native-thumbnail/node_modules/node-addon-api
 
 OBJS := \
 	$(obj).target/$(TARGET)/src/addon.o
@@ -153,6 +153,8 @@ LDFLAGS_Debug := \
 	-framework ImageIO \
 	-framework CoreGraphics \
 	-framework CoreServices \
+	-framework AVFoundation \
+	-framework CoreMedia \
 	-undefined dynamic_lookup \
 	-Wl,-search_paths_first \
 	-mmacosx-version-min=11.0 \
@@ -166,6 +168,8 @@ LIBTOOLFLAGS_Debug := \
 	-framework ImageIO \
 	-framework CoreGraphics \
 	-framework CoreServices \
+	-framework AVFoundation \
+	-framework CoreMedia \
 	-undefined dynamic_lookup \
 	-Wl,-search_paths_first
 
@@ -174,6 +178,8 @@ LDFLAGS_Release := \
 	-framework ImageIO \
 	-framework CoreGraphics \
 	-framework CoreServices \
+	-framework AVFoundation \
+	-framework CoreMedia \
 	-undefined dynamic_lookup \
 	-Wl,-search_paths_first \
 	-mmacosx-version-min=11.0 \
@@ -187,6 +193,8 @@ LIBTOOLFLAGS_Release := \
 	-framework ImageIO \
 	-framework CoreGraphics \
 	-framework CoreServices \
+	-framework AVFoundation \
+	-framework CoreMedia \
 	-undefined dynamic_lookup \
 	-Wl,-search_paths_first
 
