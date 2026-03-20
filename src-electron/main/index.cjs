@@ -110,7 +110,8 @@ function createWindow() {
       nodeIntegration: false
     },
     titleBarStyle: 'hiddenInset',
-    show: false
+    show: false,
+    icon: path.join(__dirname, '../../build/icon.png')
   });
 
   const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
@@ -241,6 +242,15 @@ app.whenReady().then(() => {
   imageProcessor.initialize();
   registerLocalProtocol();
   database.loadMetadata();
+  
+  // Set dock icon for macOS during development
+  if (process.platform === 'darwin') {
+    const iconPath = path.join(__dirname, '../../build/icon.png');
+    if (fs.existsSync(iconPath)) {
+      app.dock.setIcon(iconPath);
+    }
+  }
+  
   createWindow();
 
   app.on('activate', () => {
