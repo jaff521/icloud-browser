@@ -21,7 +21,7 @@
   "mac": {
     "category": "public.app-category.photography",
     "target": "dmg",
-    "icon": "build/icon.icns"
+    "icon": "build/icon.png"
   },
   "win": {
     "target": "nsis"
