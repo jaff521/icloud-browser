@@ -254,13 +254,18 @@ ipcMain.on('show-context-menu', (event, filePaths) => {
     },
     {
       label: isMultiple ? `Copy ${count} Images` : 'Copy Image',
-      click: async () => {
+      click: () => {
         try {
           // macOS native clipboard for file objects (allows pasting directly into Finder/Apps)
-          const posixFiles = filePaths.map(p => `POSIX file "${p}"`).join(', ');
-          const script = `osascript -e 'set the clipboard to {${posixFiles}}'`;
-          await execPromise(script);
-          logToFile(`[Clipboard] Successfully copied ${count} files to macOS clipboard via AppleScript.`);
+          const plist = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <array>
+${filePaths.map(p => `    <string>${p}</string>`).join('\n')}
+  </array>
+</plist>`;
+          clipboard.writeBuffer('NSFilenamesPboardType', Buffer.from(plist, 'utf8'));
+          logToFile(`[Clipboard] Successfully copied ${count} files to macOS clipboard via NSFilenamesPboardType plist.`);
         } catch (e) {
           logToFile(`[Clipboard Error] Failed to copy files: ${e}`);
           // Fallback to electron's native image block for the first image
