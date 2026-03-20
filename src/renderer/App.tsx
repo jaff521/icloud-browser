@@ -69,7 +69,10 @@ function App() {
 
   useEffect(() => {
     loadYears();
-  }, [loadYears]);
+    // Fetch timeline all photos by default on startup
+    loadPhotos('', '', '', 1, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only call once on mount
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -147,6 +150,18 @@ function App() {
     setPreviewIndex(0);
   };
 
+  const handleAllPhotosSelect = () => {
+    setSelectedYear('');
+    setSelectedMonth('');
+    setSelectedDay('');
+    setPhotos([]);
+    setPhotoCount(0);
+    setCurrentPage(1);
+    setHasMore(true);
+    // Fetch all paginated
+    loadPhotos('', '', '', 1, false);
+  };
+
   const handleLoadMore = () => {
     if (!loading && hasMore) {
       loadPhotos(selectedYear, selectedMonth, selectedDay, currentPage + 1, true);
@@ -199,6 +214,8 @@ function App() {
           onYearSelect={handleYearSelect}
           onMonthSelect={handleMonthSelect}
           onDaySelect={handleDaySelect}
+          onAllPhotosSelect={handleAllPhotosSelect}
+          isAllPhotosActive={!selectedYear}
         />
         <main className="main-content">
           {scanning && (

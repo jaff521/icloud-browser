@@ -139,6 +139,23 @@ body {
   color: var(--text-secondary);
 }
 
+.timeline-date-header {
+  position: sticky;
+  top: 0;
+  padding: 12px 0;
+  background-color: var(--bg-primary); /* Uses main content background */
+  z-index: 10;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.photo-grid-container {
+  display: flex;
+  flex-direction: column;
+}
+
 .photo-card {
   background-color: var(--card-bg);
   border-radius: 8px;

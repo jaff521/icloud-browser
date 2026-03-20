@@ -10,6 +10,8 @@ interface SidebarProps {
   onYearSelect: (year: string) => void;
   onMonthSelect: (month: string) => void;
   onDaySelect: (day: string) => void;
+  onAllPhotosSelect?: () => void;
+  isAllPhotosActive?: boolean;
 }
 
 const monthNames = [
@@ -26,10 +28,23 @@ function Sidebar({
   selectedDay,
   onYearSelect,
   onMonthSelect,
-  onDaySelect
+  onDaySelect,
+  onAllPhotosSelect,
+  isAllPhotosActive
 }: SidebarProps) {
   return (
     <div className="sidebar">
+      <div className="sidebar-section">
+        <ul>
+          <li
+            className={isAllPhotosActive ? 'active' : ''}
+            onClick={() => onAllPhotosSelect && onAllPhotosSelect()}
+          >
+            <span style={{ marginRight: '8px' }}>🖼️</span>
+            All Photos
+          </li>
+        </ul>
+      </div>
       <div className="sidebar-section">
         <h3>Years</h3>
         <ul>

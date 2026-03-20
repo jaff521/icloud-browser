@@ -85,6 +85,15 @@ function PhotoGrid({ photos, onPhotoClick, loading, hasMore, onLoadMore }: Photo
     };
   }, [hasMore, onLoadMore]);
 
+  const groupedPhotos = photos.reduce((acc, photo) => {
+    const date = photo.dateCreated || 'Unknown Date';
+    if (!acc[date]) {
+      acc[date] = [];
+    }
+    acc[date].push(photo);
+    return acc;
+  }, {} as Record<string, Photo[]>);
+
   if (photos.length === 0 && !loading) {
     return (
       <div className="photo-grid empty">
@@ -94,13 +103,24 @@ function PhotoGrid({ photos, onPhotoClick, loading, hasMore, onLoadMore }: Photo
   }
 
   return (
-    <div className="photo-grid">
-      {photos.map((photo, index) => (
-        <PhotoCard
-          key={`${photo.id}-${index}`}
-          photo={photo}
-          onClick={() => onPhotoClick(photo, index)}
-        />
+    <div className="photo-grid-container" style={{ position: 'relative' }}>
+      {Object.entries(groupedPhotos).map(([date, dayPhotos]) => (
+        <div key={date} className="timeline-group" style={{ marginBottom: '24px' }}>
+          <h2 className="timeline-date-header">{date}</h2>
+          <div className="photo-grid">
+            {dayPhotos.map((photo) => {
+              // Find global index for navigation in PreviewModal
+              const globalIndex = photos.findIndex(p => p.id === photo.id);
+              return (
+                <PhotoCard
+                  key={`${photo.id}-${globalIndex}`}
+                  photo={photo}
+                  onClick={() => onPhotoClick(photo, globalIndex)}
+                />
+              );
+            })}
+          </div>
+        </div>
       ))}
       {hasMore && (
         <div ref={loadMoreRef} className="load-more">
