@@ -169,6 +169,11 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
+.photo-card.selected {
+  outline: 3px solid var(--accent-color);
+  outline-offset: -3px;
+}
+
 .photo-thumbnail {
   position: relative;
   aspect-ratio: 1;
@@ -184,14 +189,23 @@ body {
 .video-badge {
   position: absolute;
   bottom: 8px;
-  right: 8px;
-  width: 32px;
-  height: 32px;
+  left: 8px;
+  width: 24px;
+  height: 24px;
   background-color: rgba(0, 0, 0, 0.6);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.selection-badge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  z-index: 5;
 }
 
 .photo-info {

@@ -240,16 +240,21 @@ ipcMain.handle('scan-directory', async (event, rootPath) => {
   return count;
 });
 
-ipcMain.on('show-context-menu', (event, filePath) => {
+ipcMain.on('show-context-menu', (event, filePaths) => {
+  const count = filePaths.length;
+  const isMultiple = count > 1;
+  const targetPath = filePaths[0];
+
   const template = [
     {
-      label: 'Reveal in Finder',
-      click: () => { shell.showItemInFolder(filePath); }
+      label: isMultiple ? `Reveal ${count} Items in Finder` : 'Reveal in Finder',
+      click: () => { shell.showItemInFolder(targetPath); }
     },
     {
-      label: 'Copy Image',
+      label: isMultiple ? `Copy ${count} Images` : 'Copy Image',
       click: () => {
-        clipboard.writeImage(nativeImage.createFromPath(filePath));
+        // Fallback to first image for multiple selection copy natively
+        clipboard.writeImage(nativeImage.createFromPath(targetPath));
       }
     },
     { type: 'separator' },
@@ -259,10 +264,11 @@ ipcMain.on('show-context-menu', (event, filePath) => {
   menu.popup({ window: BrowserWindow.fromWebContents(event.sender) });
 });
 
-ipcMain.on('start-drag', (event, filePath) => {
+ipcMain.on('start-drag', (event, filePaths) => {
   const iconName = path.join(__dirname, '../../build/icon.png');
   event.sender.startDrag({
-    file: filePath,
+    file: filePaths[0],
+    files: filePaths,
     icon: iconName
   });
 });

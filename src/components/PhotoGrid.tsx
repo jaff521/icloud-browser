@@ -3,7 +3,9 @@ import type { Photo } from '../types';
 
 interface PhotoGridProps {
   photos: Photo[];
-  onPhotoClick: (photo: Photo, index: number) => void;
+  selectedPhotoIds: Set<number>;
+  onPhotoClick: (photo: Photo, index: number, event: React.MouseEvent) => void;
+  onPhotoDoubleClick: (photo: Photo, index: number) => void;
   loading: boolean;
   hasMore: boolean;
   onLoadMore: () => void;
@@ -21,25 +23,24 @@ function toLocalUrl(filePath: string): string {
 
 interface PhotoCardProps {
   photo: Photo;
-  onClick: () => void;
+  isSelected?: boolean;
+  onClick: (e: React.MouseEvent) => void;
+  onDoubleClick: () => void;
+  onContextMenu: (e: React.MouseEvent) => void;
+  onDragStart: (e: React.DragEvent) => void;
 }
 
-function PhotoCard({ photo, onClick }: PhotoCardProps) {
+function PhotoCard({ photo, isSelected, onClick, onDoubleClick, onContextMenu, onDragStart }: PhotoCardProps) {
   const imageSrc = `${toLocalUrl(photo.filePath)}?type=thumbnail&size=300`;
 
   return (
     <div 
-      className="photo-card" 
+      className={`photo-card ${isSelected ? 'selected' : ''}`} 
       onClick={onClick}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        (window as any).electronAPI.showContextMenu(photo.filePath);
-      }}
+      onDoubleClick={onDoubleClick}
+      onContextMenu={onContextMenu}
       draggable={true}
-      onDragStart={(e) => {
-        e.preventDefault();
-        (window as any).electronAPI.startDrag(photo.filePath);
-      }}
+      onDragStart={onDragStart}
     >
       <div className="photo-thumbnail">
         <img
@@ -54,6 +55,11 @@ function PhotoCard({ photo, onClick }: PhotoCardProps) {
             </svg>
           </div>
         )}
+        {isSelected && (
+          <div className="selection-badge">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#007bff"/><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z" fill="white"/></svg>
+          </div>
+        )}
       </div>
       <div className="photo-info">
         <span className="photo-filename">{photo.filename}</span>
@@ -62,7 +68,7 @@ function PhotoCard({ photo, onClick }: PhotoCardProps) {
   );
 }
 
-function PhotoGrid({ photos, onPhotoClick, loading, hasMore, onLoadMore }: PhotoGridProps) {
+function PhotoGrid({ photos, selectedPhotoIds, onPhotoClick, onPhotoDoubleClick, loading, hasMore, onLoadMore }: PhotoGridProps) {
   const observer = React.useRef<IntersectionObserver | null>(null);
   const loadMoreRef = React.useRef<HTMLDivElement>(null);
 
@@ -111,11 +117,37 @@ function PhotoGrid({ photos, onPhotoClick, loading, hasMore, onLoadMore }: Photo
             {dayPhotos.map((photo) => {
               // Find global index for navigation in PreviewModal
               const globalIndex = photos.findIndex(p => p.id === photo.id);
+              const isSelected = selectedPhotoIds.has(photo.id);
+
+              const handleContextMenu = (e: React.MouseEvent) => {
+                e.preventDefault();
+                e.stopPropagation();
+                let targetPaths = [photo.filePath];
+                if (isSelected && selectedPhotoIds.size > 1) {
+                  targetPaths = photos.filter(p => selectedPhotoIds.has(p.id)).map(p => p.filePath);
+                }
+                (window as any).electronAPI.showContextMenu(targetPaths);
+              };
+
+              const handleDragStart = (e: React.DragEvent) => {
+                e.preventDefault();
+                e.stopPropagation();
+                let targetPaths = [photo.filePath];
+                if (isSelected && selectedPhotoIds.size > 1) {
+                  targetPaths = photos.filter(p => selectedPhotoIds.has(p.id)).map(p => p.filePath);
+                }
+                (window as any).electronAPI.startDrag(targetPaths);
+              };
+
               return (
                 <PhotoCard
                   key={`${photo.id}-${globalIndex}`}
                   photo={photo}
-                  onClick={() => onPhotoClick(photo, globalIndex)}
+                  isSelected={isSelected}
+                  onClick={(e) => onPhotoClick(photo, globalIndex, e)}
+                  onDoubleClick={() => onPhotoDoubleClick(photo, globalIndex)}
+                  onContextMenu={handleContextMenu}
+                  onDragStart={handleDragStart}
                 />
               );
             })}

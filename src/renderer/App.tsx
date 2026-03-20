@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Sidebar from '../components/Sidebar';
 import PhotoGrid from '../components/PhotoGrid';
 import PreviewModal from '../components/PreviewModal';
@@ -20,6 +20,8 @@ function App() {
   const [photoCount, setPhotoCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [scanning, setScanning] = useState(false);
+  const [selectedPhotoIds, setSelectedPhotoIds] = useState<Set<number>>(new Set());
+  const lastSelectedIndex = useRef<number | null>(null);
 
   const limit = 50;
 
@@ -82,14 +84,26 @@ function App() {
         if (previewPhoto) {
           handleClosePreview();
         } else {
-          // Open first loaded photo
-          handlePhotoClick(photos[0], 0);
+          // Open first selected photo, or first loaded
+          if (selectedPhotoIds.size > 0) {
+            const firstSelected = photos.find(p => selectedPhotoIds.has(p.id));
+            if (firstSelected) {
+              handlePhotoDoubleClick(firstSelected, photos.indexOf(firstSelected));
+            }
+          } else {
+            handlePhotoDoubleClick(photos[0], 0);
+          }
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [photos, previewPhoto]);
+  }, [photos, previewPhoto, selectedPhotoIds]);
+
+  const handlePhotoDoubleClick = (photo: Photo, index: number) => {
+    setPreviewPhoto(photo);
+    setPreviewIndex(index);
+  };
 
 // Removed thumbnail-ready listener as thumbnails are now generated on-the-fly
 
@@ -135,9 +149,36 @@ function App() {
     }
   };
 
-  const handlePhotoClick = (photo: Photo, index: number) => {
-    setPreviewPhoto(photo);
-    setPreviewIndex(index);
+  const handlePhotoClick = (photo: Photo, index: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    setSelectedPhotoIds(prev => {
+      const newSelection = new Set(prev);
+
+      if (e.metaKey || e.ctrlKey) {
+        // Toggle selection
+        if (newSelection.has(photo.id)) {
+          newSelection.delete(photo.id);
+        } else {
+          newSelection.add(photo.id);
+        }
+        lastSelectedIndex.current = index;
+      } else if (e.shiftKey && lastSelectedIndex.current !== null) {
+        // Range selection
+        const start = Math.min(lastSelectedIndex.current, index);
+        const end = Math.max(lastSelectedIndex.current, index);
+        for (let i = start; i <= end; i++) {
+          newSelection.add(photos[i].id);
+        }
+      } else {
+        // Single selection
+        newSelection.clear();
+        newSelection.add(photo.id);
+        lastSelectedIndex.current = index;
+      }
+      return newSelection;
+    });
   };
 
   const handleNavigate = (index: number) => {
@@ -217,7 +258,7 @@ function App() {
           onAllPhotosSelect={handleAllPhotosSelect}
           isAllPhotosActive={!selectedYear}
         />
-        <main className="main-content">
+        <main className="main-content" onClick={() => setSelectedPhotoIds(new Set())}>
           {scanning && (
             <div className="scanning-overlay">
               <div className="scanning-spinner" />
@@ -231,7 +272,9 @@ function App() {
           )}
           <PhotoGrid
             photos={photos}
+            selectedPhotoIds={selectedPhotoIds}
             onPhotoClick={handlePhotoClick}
+            onPhotoDoubleClick={handlePhotoDoubleClick}
             loading={loading}
             hasMore={hasMore}
             onLoadMore={handleLoadMore}

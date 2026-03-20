@@ -31,8 +31,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     console.log('[Preload] 调用 scanDirectory, path:', rootPath);
     return ipcRenderer.invoke('scan-directory', rootPath);
   },
-  showContextMenu: (filePath) => ipcRenderer.send('show-context-menu', filePath),
-  startDrag: (filePath) => ipcRenderer.send('start-drag', filePath),
+  showContextMenu: (filePaths) => ipcRenderer.send('show-context-menu', filePaths),
+  startDrag: (filePaths) => ipcRenderer.send('start-drag', filePaths),
   onThumbnailReady: (callback) => {
     const handler = (event, data) => callback(data);
     ipcRenderer.on('thumbnail-ready', handler);
