@@ -3,6 +3,8 @@ const path = require('path');
 const fs = require('fs');
 const { Readable } = require('stream');
 const util = require('util');
+const { exec } = require('child_process');
+const execPromise = util.promisify(exec);
 
 const LOG_FILE = path.join(process.cwd(), 'electron-debug.log');
 
@@ -252,9 +254,18 @@ ipcMain.on('show-context-menu', (event, filePaths) => {
     },
     {
       label: isMultiple ? `Copy ${count} Images` : 'Copy Image',
-      click: () => {
-        // Fallback to first image for multiple selection copy natively
-        clipboard.writeImage(nativeImage.createFromPath(targetPath));
+      click: async () => {
+        try {
+          // macOS native clipboard for file objects (allows pasting directly into Finder/Apps)
+          const posixFiles = filePaths.map(p => `POSIX file "${p}"`).join(', ');
+          const script = `osascript -e 'set the clipboard to {${posixFiles}}'`;
+          await execPromise(script);
+          logToFile(`[Clipboard] Successfully copied ${count} files to macOS clipboard via AppleScript.`);
+        } catch (e) {
+          logToFile(`[Clipboard Error] Failed to copy files: ${e}`);
+          // Fallback to electron's native image block for the first image
+          clipboard.writeImage(nativeImage.createFromPath(targetPath));
+        }
       }
     },
     { type: 'separator' },
