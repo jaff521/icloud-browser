@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, protocol, session, net } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, protocol, session, net, Menu, shell, clipboard, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { Readable } = require('stream');
@@ -238,6 +238,33 @@ ipcMain.handle('scan-directory', async (event, rootPath) => {
   const count = database.scanDirectory(rootPath);
   console.log('[Main] 扫描完成，找到', count, '张照片');
   return count;
+});
+
+ipcMain.on('show-context-menu', (event, filePath) => {
+  const template = [
+    {
+      label: 'Reveal in Finder',
+      click: () => { shell.showItemInFolder(filePath); }
+    },
+    {
+      label: 'Copy Image',
+      click: () => {
+        clipboard.writeImage(nativeImage.createFromPath(filePath));
+      }
+    },
+    { type: 'separator' },
+    { role: 'shareMenu' }
+  ];
+  const menu = Menu.buildFromTemplate(template);
+  menu.popup({ window: BrowserWindow.fromWebContents(event.sender) });
+});
+
+ipcMain.on('start-drag', (event, filePath) => {
+  const iconName = path.join(__dirname, '../../build/icon.png');
+  event.sender.startDrag({
+    file: filePath,
+    icon: iconName
+  });
 });
 
 app.whenReady().then(() => {

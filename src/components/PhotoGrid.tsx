@@ -28,7 +28,19 @@ function PhotoCard({ photo, onClick }: PhotoCardProps) {
   const imageSrc = `${toLocalUrl(photo.filePath)}?type=thumbnail&size=300`;
 
   return (
-    <div className="photo-card" onClick={onClick}>
+    <div 
+      className="photo-card" 
+      onClick={onClick}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        (window as any).electronAPI.showContextMenu(photo.filePath);
+      }}
+      draggable={true}
+      onDragStart={(e) => {
+        e.preventDefault();
+        (window as any).electronAPI.startDrag(photo.filePath);
+      }}
+    >
       <div className="photo-thumbnail">
         <img
           src={imageSrc}
