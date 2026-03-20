@@ -71,6 +71,23 @@ function App() {
     loadYears();
   }, [loadYears]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Spacebar for QuickLook preview toggle
+      if (e.code === 'Space' && photos.length > 0) {
+        e.preventDefault();
+        if (previewPhoto) {
+          handleClosePreview();
+        } else {
+          // Open first loaded photo
+          handlePhotoClick(photos[0], 0);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [photos, previewPhoto]);
+
 // Removed thumbnail-ready listener as thumbnails are now generated on-the-fly
 
   const handleYearSelect = (year: string) => {
