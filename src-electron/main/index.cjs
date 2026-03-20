@@ -110,6 +110,9 @@ function createWindow() {
       nodeIntegration: false
     },
     titleBarStyle: 'hiddenInset',
+    vibrancy: 'sidebar',
+    visualEffectState: 'active',
+    trafficLightPosition: { x: 20, y: 18 },
     show: false,
     icon: path.join(__dirname, '../../build/icon.png')
   });

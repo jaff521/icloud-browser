@@ -17,7 +17,7 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  background-color: var(--bg-primary);
+  background-color: transparent;
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -34,9 +34,15 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 20px;
-  background-color: var(--bg-secondary);
+  padding: 12px 20px 12px 80px; /* Left padding for traffic lights */
+  background-color: transparent;
   border-bottom: 1px solid var(--border-color);
+  -webkit-app-region: drag; /* Make toolbar draggable */
+  height: 52px;
+}
+
+.app-header button {
+  -webkit-app-region: no-drag;
 }
 
 .app-header h1 {
@@ -67,7 +73,7 @@ body {
 
 .sidebar {
   width: 200px;
-  background-color: var(--bg-secondary);
+  background-color: transparent;
   border-right: 1px solid var(--border-color);
   overflow-y: auto;
   padding: 16px 0;
@@ -108,6 +114,7 @@ body {
 
 .main-content {
   flex: 1;
+  background-color: var(--bg-primary);
   overflow-y: auto;
   padding: 20px;
 }
