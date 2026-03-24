@@ -1,4 +1,4 @@
-
+import { t } from '../renderer/i18n';
 
 interface SidebarProps {
   years: string[];
@@ -12,6 +12,7 @@ interface SidebarProps {
   onDaySelect: (day: string) => void;
   onAllPhotosSelect?: () => void;
   isAllPhotosActive?: boolean;
+  language: string;
 }
 
 const monthNames = [
@@ -30,8 +31,10 @@ function Sidebar({
   onMonthSelect,
   onDaySelect,
   onAllPhotosSelect,
-  isAllPhotosActive
+  isAllPhotosActive,
+  language
 }: SidebarProps) {
+  const isZh = language === 'zh';
   return (
     <div className="sidebar">
       <div className="sidebar-section">
@@ -41,12 +44,12 @@ function Sidebar({
             onClick={() => onAllPhotosSelect && onAllPhotosSelect()}
           >
             <span style={{ marginRight: '8px' }}>🖼️</span>
-            All Photos
+            {t(language, 'allPhotos')}
           </li>
         </ul>
       </div>
       <div className="sidebar-section">
-        <h3>Years</h3>
+        <h3>{language === 'zh' ? '年份' : 'Years'}</h3>
         <ul>
           {years.map(year => (
             <li
@@ -54,7 +57,7 @@ function Sidebar({
               className={year === selectedYear ? 'active' : ''}
               onClick={() => onYearSelect(year)}
             >
-              {year}
+              {year}{isZh ? '年' : ''}
             </li>
           ))}
         </ul>
@@ -62,7 +65,7 @@ function Sidebar({
 
       {selectedYear && months.length > 0 && (
         <div className="sidebar-section">
-          <h3>Months</h3>
+          <h3>{isZh ? '月份' : 'Months'}</h3>
           <ul>
             {months.map(month => (
               <li
@@ -70,7 +73,7 @@ function Sidebar({
                 className={month === selectedMonth ? 'active' : ''}
                 onClick={() => onMonthSelect(month)}
               >
-                {monthNames[parseInt(month) - 1]}
+                {isZh ? `${month}月` : monthNames[parseInt(month) - 1]}
               </li>
             ))}
           </ul>
@@ -79,7 +82,7 @@ function Sidebar({
 
       {selectedYear && selectedMonth && days.length > 0 && (
         <div className="sidebar-section">
-          <h3>Days</h3>
+          <h3>{isZh ? '日期' : 'Days'}</h3>
           <ul>
             {days.map(day => (
               <li
@@ -87,7 +90,7 @@ function Sidebar({
                 className={day === selectedDay ? 'active' : ''}
                 onClick={() => onDaySelect(day)}
               >
-                {parseInt(day)}
+                {parseInt(day)}{isZh ? '日' : ''}
               </li>
             ))}
           </ul>

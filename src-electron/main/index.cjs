@@ -330,13 +330,21 @@ ipcMain.on('show-context-menu', (event, filePaths) => {
   const isMultiple = count > 1;
   const targetPath = filePaths[0];
 
+  const lang = userConfig.language === 'zh' ? 'zh' : 'en';
+  const revealLabel = lang === 'zh'
+    ? (isMultiple ? `在访达中显示 ${count} 个项目` : '在访达中显示')
+    : (isMultiple ? `Reveal ${count} Items in Finder` : 'Reveal in Finder');
+  const copyLabel = lang === 'zh'
+    ? (isMultiple ? `复制 ${count} 张照片` : '复制照片')
+    : (isMultiple ? `Copy ${count} Images` : 'Copy Image');
+
   const template = [
     {
-      label: isMultiple ? `Reveal ${count} Items in Finder` : 'Reveal in Finder',
+      label: revealLabel,
       click: () => { shell.showItemInFolder(targetPath); }
     },
     {
-      label: isMultiple ? `Copy ${count} Images` : 'Copy Image',
+      label: copyLabel,
       click: () => {
         try {
           // macOS native clipboard for file objects (allows pasting directly into Finder/Apps)

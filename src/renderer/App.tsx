@@ -4,6 +4,7 @@ import PhotoGrid from '../components/PhotoGrid';
 import PreviewModal from '../components/PreviewModal';
 import type { Photo } from '../types';
 import '../styles.css';
+import { t } from './i18n';
 
 function App() {
   const [years, setYears] = useState<string[]>([]);
@@ -12,6 +13,7 @@ function App() {
   const [selectedYear, setSelectedYear] = useState<string>('');
   const [selectedMonth, setSelectedMonth] = useState<string>('');
   const [selectedDay, setSelectedDay] = useState<string>('');
+  const [language, setLanguage] = useState<string>('en');
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [previewPhoto, setPreviewPhoto] = useState<Photo | null>(null);
   const [previewIndex, setPreviewIndex] = useState<number>(0);
@@ -69,6 +71,12 @@ function App() {
   }, []);
 
   useEffect(() => {
+    (window as any).electronAPI.getConfig().then((config: any) => {
+      if (config && config.language) {
+        setLanguage(config.language);
+      }
+    });
+    
     loadYears();
     // Fetch timeline all photos by default on startup
     loadPhotos('', '', '', 1, false);
@@ -211,7 +219,7 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>iCloud Browser</h1>
+        <h1>{t(language, 'appTitle')}</h1>
         <div className="app-controls">
           <button className="icon-btn" onClick={() => (window as any).electronAPI.openSettings()} aria-label="Settings">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -234,11 +242,12 @@ function App() {
           onDaySelect={handleDaySelect}
           onAllPhotosSelect={handleAllPhotosSelect}
           isAllPhotosActive={!selectedYear}
+          language={language}
         />
         <main className="main-content" onClick={() => setSelectedPhotoIds(new Set())}>
           {selectedYear && (
             <div className="photo-count">
-              {photoCount} photos
+              {photoCount} {t(language, 'photosCount')}
             </div>
           )}
           <PhotoGrid
