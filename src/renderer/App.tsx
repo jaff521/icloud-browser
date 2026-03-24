@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Sidebar from '../components/Sidebar';
 import PhotoGrid from '../components/PhotoGrid';
 import PreviewModal from '../components/PreviewModal';
+import SettingsModal from '../components/SettingsModal';
 import type { Photo } from '../types';
 import '../styles.css';
 
@@ -22,6 +23,8 @@ function App() {
   const [scanning, setScanning] = useState(false);
   const [selectedPhotoIds, setSelectedPhotoIds] = useState<Set<number>>(new Set());
   const lastSelectedIndex = useRef<number | null>(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [rootPath, setRootPath] = useState<string | null>(null);
 
   const limit = 50;
 
@@ -70,6 +73,11 @@ function App() {
   }, []);
 
   useEffect(() => {
+    (window as any).electronAPI.getConfig().then((config: any) => {
+      if (config && config.rootPath) {
+        setRootPath(config.rootPath);
+      }
+    });
     loadYears();
     // Fetch timeline all photos by default on startup
     loadPhotos('', '', '', 1, false);
@@ -216,6 +224,7 @@ function App() {
       const result = await window.electronAPI.selectDirectory();
       console.log('[App] 选择目录结果:', result);
       if (result) {
+        setRootPath(result);
         console.log('[App] 开始扫描目录:', result);
         setScanning(true);
         await window.electronAPI.scanDirectory(result);
@@ -240,9 +249,10 @@ function App() {
     <div className="app">
       <header className="app-header">
         <h1>iCloud Browser</h1>
-        <button className="select-btn" onClick={handleSelectDirectory} disabled={scanning}>
-          {scanning ? 'Scanning...' : 'Select iCloud Photos Directory'}
-        </button>
+        <div className="app-controls">
+          {scanning && <span className="scanning-text">Scanning...</span>}
+          <button className="icon-btn" onClick={() => setIsSettingsOpen(true)}>⚙️</button>
+        </div>
       </header>
       <div className="app-content">
         <Sidebar
@@ -288,6 +298,16 @@ function App() {
           currentIndex={previewIndex}
           onClose={handleClosePreview}
           onNavigate={handleNavigate}
+        />
+      )}
+      {isSettingsOpen && (
+        <SettingsModal
+          onClose={() => setIsSettingsOpen(false)}
+          rootPath={rootPath}
+          onScanDirectory={() => {
+            setIsSettingsOpen(false);
+            handleSelectDirectory();
+          }}
         />
       )}
     </div>

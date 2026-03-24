@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, protocol, session, net, Menu, shell, clipboard, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, protocol, session, net, Menu, shell, clipboard, nativeImage, nativeTheme } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { Readable } = require('stream');
@@ -32,6 +32,31 @@ try {
 }
 const database = require('../database.cjs');
 const imageProcessor = require('./imageProcessor.cjs');
+
+// Settings / Config Persistence
+let userConfig = { theme: 'system', rootPath: null };
+let configFilePath = '';
+
+function loadConfig() {
+  configFilePath = path.join(app.getPath('userData'), 'config.json');
+  try {
+    if (fs.existsSync(configFilePath)) {
+      const data = fs.readFileSync(configFilePath, 'utf8');
+      userConfig = { ...userConfig, ...JSON.parse(data) };
+    }
+  } catch (e) {
+    console.error('Failed to load config:', e);
+  }
+}
+
+function saveConfig(updates) {
+  userConfig = { ...userConfig, ...updates };
+  try {
+    fs.writeFileSync(configFilePath, JSON.stringify(userConfig, null, 2));
+  } catch (e) {
+    console.error('Failed to save config:', e);
+  }
+}
 let macosThumbnail;
 try {
   macosThumbnail = require('../../native-thumbnail/build/Release/macos_thumbnail.node');
@@ -238,8 +263,21 @@ ipcMain.handle('get-photo-count', async (event, year, month, day) => {
 
 ipcMain.handle('scan-directory', async (event, rootPath) => {
   const count = database.scanDirectory(rootPath);
+  saveConfig({ rootPath });
   console.log('[Main] 扫描完成，找到', count, '张照片');
   return count;
+});
+
+ipcMain.handle('get-config', () => userConfig);
+
+ipcMain.handle('save-config', (event, updates) => {
+  saveConfig(updates);
+  return userConfig;
+});
+
+ipcMain.handle('set-theme', (event, theme) => {
+  nativeTheme.themeSource = theme;
+  saveConfig({ theme });
 });
 
 ipcMain.on('show-context-menu', (event, filePaths) => {
@@ -291,6 +329,8 @@ ipcMain.on('start-drag', (event, filePaths) => {
 
 app.whenReady().then(() => {
   console.log('[Main] app.ready');
+  loadConfig();
+  nativeTheme.themeSource = userConfig.theme || 'system';
   imageProcessor.initialize();
   registerLocalProtocol();
   database.loadMetadata();

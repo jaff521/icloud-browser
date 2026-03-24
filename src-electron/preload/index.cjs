@@ -33,6 +33,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   showContextMenu: (filePaths) => ipcRenderer.send('show-context-menu', filePaths),
   startDrag: (filePaths) => ipcRenderer.send('start-drag', filePaths),
+  getConfig: () => ipcRenderer.invoke('get-config'),
+  saveConfig: (updates) => ipcRenderer.invoke('save-config', updates),
+  setTheme: (theme) => ipcRenderer.invoke('set-theme', theme),
   onThumbnailReady: (callback) => {
     const handler = (event, data) => callback(data);
     ipcRenderer.on('thumbnail-ready', handler);
