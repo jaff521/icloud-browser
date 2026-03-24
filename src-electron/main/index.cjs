@@ -130,7 +130,7 @@ function createWindow() {
     minWidth: 800,
     minHeight: 600,
     title: 'iCloud Browser',
-    backgroundColor: '#1d1d1f',
+    backgroundColor: '#00000000',
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.cjs'),
       contextIsolation: true,
@@ -292,7 +292,7 @@ ipcMain.on('open-settings', () => {
     width: 480,
     height: 480,
     title: 'Settings',
-    backgroundColor: nativeTheme.shouldUseDarkColors ? '#1e1e1e' : '#ffffff',
+    backgroundColor: '#00000000',
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.cjs'),
       contextIsolation: true,
