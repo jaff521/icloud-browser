@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
-import './styles.css';
+import '../styles.css';
 
 const SettingsApp: React.FC = () => {
   const [theme, setTheme] = useState('system');
