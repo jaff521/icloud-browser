@@ -280,6 +280,51 @@ ipcMain.handle('set-theme', (event, theme) => {
   saveConfig({ theme });
 });
 
+let settingsWindow = null;
+ipcMain.on('open-settings', () => {
+  if (settingsWindow) {
+    settingsWindow.focus();
+    return;
+  }
+
+  console.log('[Main] 创建设置窗口');
+  settingsWindow = new BrowserWindow({
+    width: 480,
+    height: 480,
+    title: 'Settings',
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#1e1e1e' : '#ffffff',
+    webPreferences: {
+      preload: path.join(__dirname, '../preload/index.cjs'),
+      contextIsolation: true,
+      nodeIntegration: false
+    },
+    titleBarStyle: 'hiddenInset',
+    vibrancy: 'sidebar',
+    visualEffectState: 'active',
+    resizable: false,
+    autoHideMenuBar: true
+  });
+
+  const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+  if (isDev) {
+    settingsWindow.loadURL('http://localhost:5173/settings.html');
+  } else {
+    settingsWindow.loadFile(path.join(__dirname, '../../dist/settings.html'));
+  }
+
+  // Reload main window if settings window triggers a full re-scan
+  ipcMain.removeAllListeners('reload-main-window');
+  ipcMain.on('reload-main-window', () => {
+    if (mainWindow) {
+      mainWindow.reload();
+    }
+  });
+
+  settingsWindow.on('closed', () => {
+    settingsWindow = null;
+  });
+});
+
 ipcMain.on('show-context-menu', (event, filePaths) => {
   const count = filePaths.length;
   const isMultiple = count > 1;

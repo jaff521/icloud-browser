@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Sidebar from '../components/Sidebar';
 import PhotoGrid from '../components/PhotoGrid';
 import PreviewModal from '../components/PreviewModal';
-import SettingsModal from '../components/SettingsModal';
 import type { Photo } from '../types';
 import '../styles.css';
 
@@ -20,11 +19,8 @@ function App() {
   const [hasMore, setHasMore] = useState(true);
   const [photoCount, setPhotoCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [scanning, setScanning] = useState(false);
   const [selectedPhotoIds, setSelectedPhotoIds] = useState<Set<number>>(new Set());
   const lastSelectedIndex = useRef<number | null>(null);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [rootPath, setRootPath] = useState<string | null>(null);
 
   const limit = 50;
 
@@ -73,11 +69,6 @@ function App() {
   }, []);
 
   useEffect(() => {
-    (window as any).electronAPI.getConfig().then((config: any) => {
-      if (config && config.rootPath) {
-        setRootPath(config.rootPath);
-      }
-    });
     loadYears();
     // Fetch timeline all photos by default on startup
     loadPhotos('', '', '', 1, false);
@@ -217,41 +208,12 @@ function App() {
     }
   };
 
-  const handleSelectDirectory = async () => {
-    console.log('[App] 点击选择目录按钮');
-    try {
-      console.log('[App] 调用 electronAPI.selectDirectory()');
-      const result = await window.electronAPI.selectDirectory();
-      console.log('[App] 选择目录结果:', result);
-      if (result) {
-        setRootPath(result);
-        console.log('[App] 开始扫描目录:', result);
-        setScanning(true);
-        await window.electronAPI.scanDirectory(result);
-        setScanning(false);
-        console.log('[App] 扫描完成，重新加载年份');
-        await loadYears();
-        setSelectedYear('');
-        setSelectedMonth('');
-        setSelectedDay('');
-        setMonths([]);
-        setDays([]);
-        setPhotos([]);
-        setPhotoCount(0);
-      }
-    } catch (error) {
-      console.error('[App] 选择目录错误:', error);
-      setScanning(false);
-    }
-  };
-
   return (
     <div className="app">
       <header className="app-header">
         <h1>iCloud Browser</h1>
         <div className="app-controls">
-          {scanning && <span className="scanning-text">Scanning...</span>}
-          <button className="icon-btn" onClick={() => setIsSettingsOpen(true)}>⚙️</button>
+          <button className="icon-btn" onClick={() => (window as any).electronAPI.openSettings()}>⚙️</button>
         </div>
       </header>
       <div className="app-content">
@@ -269,13 +231,7 @@ function App() {
           isAllPhotosActive={!selectedYear}
         />
         <main className="main-content" onClick={() => setSelectedPhotoIds(new Set())}>
-          {scanning && (
-            <div className="scanning-overlay">
-              <div className="scanning-spinner" />
-              <p>Scanning directory for photos and videos...</p>
-            </div>
-          )}
-          {selectedYear && !scanning && (
+          {selectedYear && (
             <div className="photo-count">
               {photoCount} photos
             </div>
@@ -298,16 +254,6 @@ function App() {
           currentIndex={previewIndex}
           onClose={handleClosePreview}
           onNavigate={handleNavigate}
-        />
-      )}
-      {isSettingsOpen && (
-        <SettingsModal
-          onClose={() => setIsSettingsOpen(false)}
-          rootPath={rootPath}
-          onScanDirectory={() => {
-            setIsSettingsOpen(false);
-            handleSelectDirectory();
-          }}
         />
       )}
     </div>

@@ -36,6 +36,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getConfig: () => ipcRenderer.invoke('get-config'),
   saveConfig: (updates) => ipcRenderer.invoke('save-config', updates),
   setTheme: (theme) => ipcRenderer.invoke('set-theme', theme),
+  openSettings: () => ipcRenderer.send('open-settings'),
+  reloadMainWindow: () => ipcRenderer.send('reload-main-window'),
   onThumbnailReady: (callback) => {
     const handler = (event, data) => callback(data);
     ipcRenderer.on('thumbnail-ready', handler);
