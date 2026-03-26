@@ -69,7 +69,13 @@ function scanDirectory(rootPath) {
       return;
     }
 
-    const entries = fs.readdirSync(currentDir, { withFileTypes: true });
+    let entries = [];
+    try {
+      entries = fs.readdirSync(currentDir, { withFileTypes: true });
+    } catch (err) {
+      console.warn(`[Database] 无法读取目录 (可能因为权限): ${currentDir}`, err.message);
+      return;
+    }
     for (const entry of entries) {
       const fullPath = path.join(currentDir, entry.name);
 
